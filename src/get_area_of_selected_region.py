@@ -100,6 +100,7 @@ class App(Frame):
         self.ovals = {}
         self.area = []
         self.px = 62
+        self.Meassure  = 5e-6
 
 
         self.message = Label( self.master, textvariable = self.label3text )
@@ -136,21 +137,19 @@ class App(Frame):
 
         ratio = image.width/image.height
         self.canvas_height = 720
-        self.canvas_width = int(self.canvas_height*ratio)
 
-        self.image = image.resize((int((self.canvas_height)*ratio),self.canvas_height),resample = Image.LANCZOS)
+        if  self.canvas_height  > 700:
+            self.canvas_width = int(self.canvas_height*ratio)
+            self.image = image.resize((int((self.canvas_height)*ratio),self.canvas_height),resample = Image.LANCZOS)
 
         self.create_canvas()
 
-        self.d= Start_Dialog(self,{'Measure':20e-6, "pixels": self.px},title='Enter Units in [m]',meassure_action = True)
+        self.d= Start_Dialog(self,{'Measure':self.Meassure, "pixels": self.px},title='Enter Units in [m]',meassure_action = True)
 
         if self.d.result:
             self.Measure = self.d.result.get('Measure')
         else:
             self.Start()
-
-
-
 
         if self.d.result.get('pixels') :
             self.px = int(self.d.result.get('pixels'))
@@ -159,8 +158,6 @@ class App(Frame):
             self.label3text.set( "Draw  line with mouse to measure mark on the image")
             self.message = Label( self.master, textvariable = self.label3text )
             self.message.pack( side = BOTTOM )
-
-
 
     def create_canvas(self):
         try:
@@ -214,7 +211,6 @@ class App(Frame):
         self.lines[self.count].append(self.w.create_line(*cor, fill="red"))
         self.ovals[self.count].append(self.w.create_oval( x1, y1, x2, y2, fill = self.oval_color ))
         self.prev = self.curr
-        print(self.PolyArea())
         self.label3text.set( "area = {0} [m^2], measure = {1} [m] => pixels = {2} [px]".format(self.Area, self.Measure, self.px) )
 
     def re_initiate_draw_area(self):
@@ -253,7 +249,7 @@ class App(Frame):
         self.d.result['coordinates'] = self.coordinates
         self.d.result['datetime'] = '{0:%Y-%m-%d %H:%M:%S}'.format(datetime.now())
         self.d.result['image_data'] = self.exif
-        self.w.create_text(self.start[0]  -10, self.start[1]  -10 , text = "{count}: {Type}: {Area:.2E}".format(**self.d.result))
+        self.w.create_text(self.start[0]  -10, self.start[1] - 10, text = "{count}: {Type}: {Area:.2E}".format(**self.d.result))
 
         return True
 

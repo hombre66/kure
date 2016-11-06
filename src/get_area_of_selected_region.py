@@ -6,7 +6,6 @@ __license__ = "This source code is licensed under the BSD-style license."
 __version__ = "2016-10-06"
 
 from tkinter import Frame, Canvas, Menu, BOTH, YES, Label, StringVar, BOTTOM, Tk, mainloop, Entry, Button, ACTIVE, LEFT
-#from area import area
 from PIL import Image, ImageTk
 from tkinter.filedialog import askopenfilename
 from tkinter.simpledialog import Dialog
@@ -108,8 +107,6 @@ class App(Frame):
 
         self.Start()
 
-        #self.calibration = 180*360/area({'type':'Polygon','coordinates':[[[-180,-90],[-180,90],[180,90],[180,-90],[-180,-90]]]})
-
 
         self.create_menu()
 
@@ -128,17 +125,20 @@ class App(Frame):
 
         try:
             image = Image.open(self.file_name)
+
+        except:
+            image = None
+        try:
             self.exif = { PIL.ExifTags.TAGS[k]: v  for k, v in image._getexif().items()  if k in PIL.ExifTags.TAGS}
         except:
-            print('bad file: {0}'.format(self.file_name))
+            print('bad ExifTags in file: {0}'.format(self.file_name))
             self.exif = { }
 
 
-
-        ratio = image.width/image.height
         self.canvas_height = 720
 
         if  self.canvas_height  > 700:
+            ratio = image.width/image.height
             self.canvas_width = int(self.canvas_height*ratio)
             self.image = image.resize((int((self.canvas_height)*ratio),self.canvas_height),resample = Image.LANCZOS)
 
@@ -156,8 +156,7 @@ class App(Frame):
             self.on_button_release(None)
         else:
             self.label3text.set( "Draw  line with mouse to measure mark on the image")
-            self.message = Label( self.master, textvariable = self.label3text )
-            self.message.pack( side = BOTTOM )
+
 
     def create_canvas(self):
         try:
@@ -201,11 +200,8 @@ class App(Frame):
         x1, y1 = ( event.x - 1 ), ( event.y - 1 )
         x2, y2 = ( event.x + 1 ), ( event.y + 1 )
 
-
         self.coordinates.append(self.curr)
-        #obj = {'type':'Polygon',
-        #       'coordinates':[self.coordinates + [self.coordinates[0]]]}
-        #self.Area = (area(obj)*(float(self.Measure)/self.px)**2)*self.calibration
+
         self.Area = self.PolyArea()*(float(self.Measure)/self.px)**2
         cor = self.curr + self.prev
         self.lines[self.count].append(self.w.create_line(*cor, fill="red"))
@@ -287,5 +283,5 @@ if __name__ == "__main__":
         #'''pokud se spusti soubor z prikazove radky tak se vykonna jinak se ignoruje'''
         root = Tk()
         App(root)
-        root.title( "Get area of selected region version:0.1 " )
+        root.title( "Get area of selected region version:1.0 " )
         mainloop()

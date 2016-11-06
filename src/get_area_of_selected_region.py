@@ -6,19 +6,20 @@ __license__ = "This source code is licensed under the BSD-style license."
 __version__ = "2016-10-06"
 
 from tkinter import Frame, Canvas, Menu, BOTH, YES, Label, StringVar, BOTTOM, Tk, mainloop, Entry, Button, ACTIVE, LEFT
-from area import area
+#from area import area
 from PIL import Image, ImageTk
 from tkinter.filedialog import askopenfilename
 from tkinter.simpledialog import Dialog
 from os.path import expanduser
 from datetime import datetime
 import PIL.ExifTags
+import numpy as np
 
 
 
 home = expanduser("~")
 
-class Parametrs_Dialog(Dialog):
+class Start_Dialog(Dialog):
     ''' Trida dailogu pro vkladani hodnot, vlozene hodnotu jsou v self.result'''
 
     def __init__(self,parent,parameters, title = 'Enter detail', meassure_action = False):
@@ -97,6 +98,7 @@ class App(Frame):
         self.label3text = StringVar()
         self.lines = {}
         self.ovals = {}
+        self.area = []
         self.px = 62
 
 
@@ -105,10 +107,11 @@ class App(Frame):
 
         self.Start()
 
-        self.calibration = 180*360/area({'type':'Polygon','coordinates':[[[-180,-90],[-180,90],[180,90],[180,-90],[-180,-90]]]})
+        #self.calibration = 180*360/area({'type':'Polygon','coordinates':[[[-180,-90],[-180,90],[180,90],[180,-90],[-180,-90]]]})
 
 
         self.create_menu()
+
 
     def create_menu(self):
         self.menubar = Menu(self.master)
@@ -139,8 +142,13 @@ class App(Frame):
 
         self.create_canvas()
 
-        self.d= Parametrs_Dialog(self,{'Measure':20e-6, "pixels": self.px},title='Enter Units in [m]',meassure_action = True)
-        self.Measure = self.d.result['Measure']
+        self.d= Start_Dialog(self,{'Measure':20e-6, "pixels": self.px},title='Enter Units in [m]',meassure_action = True)
+
+        if self.d.result:
+            self.Measure = self.d.result.get('Measure')
+        else:
+            self.Start()
+
 
 
 
@@ -198,14 +206,16 @@ class App(Frame):
 
 
         self.coordinates.append(self.curr)
-        obj = {'type':'Polygon',
-               'coordinates':[self.coordinates + [self.coordinates[0]]]}
-        self.Area = (area(obj)*(float(self.Measure)/self.px)**2)*self.calibration
+        #obj = {'type':'Polygon',
+        #       'coordinates':[self.coordinates + [self.coordinates[0]]]}
+        #self.Area = (area(obj)*(float(self.Measure)/self.px)**2)*self.calibration
+        self.Area = self.PolyArea()*(float(self.Measure)/self.px)**2
         cor = self.curr + self.prev
         self.lines[self.count].append(self.w.create_line(*cor, fill="red"))
         self.ovals[self.count].append(self.w.create_oval( x1, y1, x2, y2, fill = self.oval_color ))
         self.prev = self.curr
-        self.label3text.set( "area = {0} [m^2], measure = {1} [m] => pixels = {2} [px], calibration = {3}".format(self.Area, self.Measure, self.px, self.calibration) )
+        print(self.PolyArea())
+        self.label3text.set( "area = {0} [m^2], measure = {1} [m] => pixels = {2} [px]".format(self.Area, self.Measure, self.px) )
 
     def re_initiate_draw_area(self):
         if self.lines.get(self.count) == None or self.coordinates == []:
@@ -215,15 +225,22 @@ class App(Frame):
             self.ovals[self.count] = []
             self.w.bind("<ButtonRelease-1>",self.save)
 
+    def PolyArea(self):
+        x = []
+        y = []
+        for a in self.coordinates:
+            x.append(a[0])
+            y.append(a[1])
+        return 0.5*np.abs(np.dot(x,np.roll(y,1))-np.dot(y,np.roll(x,1)))
+
     def close_line_and_label_area(self,event):
         self.lines[self.count].append(self.w.create_line(*(self.curr + self.start), fill="blue"))
 
-        self.d= Parametrs_Dialog(self,{'Type':self.Type})
-        #test for cancel
+        self.d = Start_Dialog(self,{'Type':self.Type})
         if self.d.result == None:
             print(self.ovals[self.count][1])
-            map(  lambda x : x.destroy(), self.ovals[self.count],)
-            map( lambda x: x.destroy(),  self.lines[self.count])
+            for i in  self.ovals[self.count]: self.w.delete(i)
+            for i in  self.lines[self.count]: self.w.delete(i)
             self.coordinates = []
             return False
 
